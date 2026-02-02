@@ -131,9 +131,16 @@ class MelSpec(nn.Module):
         self.register_buffer("dummy", torch.tensor(0), persistent=False)
 
     def forward(self, wav):
-        if self.dummy.device != wav.device:
-            self.to(wav.device)
+	# 1. Handle device synchronization safely
+        # We always ensure the extractor is on CPU for RDNA3 stability
+        if self.dummy.device.type != 'cpu':
+            self.to('cpu')
 
+        # 2. Move input waveform to CPU
+        wav_device = wav.device
+        wav_cpu = wav.to('cpu')
+
+        # 3. Perform extraction on CPU
         mel = self.extractor(
             waveform=wav,
             n_fft=self.n_fft,
@@ -143,12 +150,11 @@ class MelSpec(nn.Module):
             win_length=self.win_length,
         )
 
-        return mel
+        # 4. Return result to the original device (GPU) for the transformer
+        return mel.to(wav_device)
 
 
 # sinusoidal position embedding
-
-
 class SinusPositionEmbedding(nn.Module):
     def __init__(self, dim):
         super().__init__()
