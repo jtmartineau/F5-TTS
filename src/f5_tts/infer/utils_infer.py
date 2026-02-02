@@ -139,7 +139,7 @@ def load_vocoder(vocoder_name="vocos", is_local=False, local_path="", device=dev
             )
 
         vocoder.remove_weight_norm()
-        vocoder = vocoder.eval().to(device)
+        vocoder = vocoder.eval().to('cpu')
     return vocoder
 
 
