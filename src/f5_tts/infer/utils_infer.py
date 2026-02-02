@@ -124,7 +124,7 @@ def load_vocoder(vocoder_name="vocos", is_local=False, local_path="", device=dev
             }
             state_dict.update(encodec_parameters)
         vocoder.load_state_dict(state_dict)
-        vocoder = vocoder.eval().to(device)
+        vocoder = vocoder.eval().to('cpu')
     elif vocoder_name == "bigvgan":
         try:
             from third_party.BigVGAN import bigvgan
@@ -194,7 +194,7 @@ def load_checkpoint(model, ckpt_path, device: str, dtype=None, use_ema=True):
             and not torch.cuda.get_device_name().endswith("[ZLUDA]")
             else torch.float32
         )
-    model = model.to(dtype)
+    model = model.to('cpu')
 
     ckpt_type = ckpt_path.split(".")[-1]
     if ckpt_type == "safetensors":
@@ -227,7 +227,7 @@ def load_checkpoint(model, ckpt_path, device: str, dtype=None, use_ema=True):
     del checkpoint
     torch.cuda.empty_cache()
 
-    return model.to(device)
+    return model
 
 
 # load model for inference
@@ -271,6 +271,7 @@ def load_model(
     dtype = torch.float32 if mel_spec_type == "bigvgan" else None
     model = load_checkpoint(model, ckpt_path, device, dtype=dtype, use_ema=use_ema)
 
+    model = model.to(device)
     return model
 
 
