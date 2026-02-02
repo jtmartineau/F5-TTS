@@ -131,18 +131,17 @@ class MelSpec(nn.Module):
         self.register_buffer("dummy", torch.tensor(0), persistent=False)
 
     def forward(self, wav):
-	# 1. Handle device synchronization safely
-        # We always ensure the extractor is on CPU for RDNA3 stability
-        if self.dummy.device.type != 'cpu':
-            self.to('cpu')
-
-        # 2. Move input waveform to CPU
-        wav_device = wav.device
-        wav_cpu = wav.to('cpu')
-
-        # 3. Perform extraction on CPU
+        # 1. Capture the original GPU device (Radeon 7600)
+        orig_device = wav.device
+        
+        # 2. Force the audio data to the CPU.
+        # Since self.extractor is a function that adopts the input's device, 
+        # passing a CPU tensor forces the STFT math to happen on the CPU.
+        wav_cpu = wav.to("cpu")
+        
+        # 3. Perform the spectrogram extraction on the CPU
         mel = self.extractor(
-            waveform=wav,
+            waveform=wav_cpu,
             n_fft=self.n_fft,
             n_mel_channels=self.n_mel_channels,
             target_sample_rate=self.target_sample_rate,
@@ -150,8 +149,8 @@ class MelSpec(nn.Module):
             win_length=self.win_length,
         )
 
-        # 4. Return result to the original device (GPU) for the transformer
-        return mel.to(wav_device)
+        # 4. Return the result back to the GPU so the transformer can continue
+        return mel.to(orig_device)
 
 
 # sinusoidal position embedding
