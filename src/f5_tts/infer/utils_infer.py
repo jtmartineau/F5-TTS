@@ -266,7 +266,7 @@ def load_model(
             method=ode_method,
         ),
         vocab_char_map=vocab_char_map,
-    ).to(device)
+    ).to('cpu')
 
     dtype = torch.float32 if mel_spec_type == "bigvgan" else None
     model = load_checkpoint(model, ckpt_path, device, dtype=dtype, use_ema=use_ema)
